@@ -1,0 +1,59 @@
+- name: Load environment variables for backend
+  include_vars:
+    file: "{{ playbook_dir }}/../deployment/.env"
+    name: env_vars
+
+- name: Ensure backend and network variables are set
+  set_fact:
+    backend_image: "{{ env_vars.BACKEND_IMAGE | default('backend_image') }}"
+    backend_container: "{{ env_vars.BACKEND_CONTAINER | default('backend_container') }}"
+    backend_port: "{{ env_vars.BACKEND_PORT | default(3000) }}"
+    postgres_container: "{{ env_vars.POSTGRES_CONTAINER | default('postgres_container') }}"
+    postgres_port: "{{ env_vars.POSTGRES_PORT | default(5432) }}"
+    network: "{{ env_vars.NETWORK | default('backend_network') }}"
+
+- name: Ensure Docker network exists
+  docker_network:
+    name: "{{ network }}"
+    state: present
+
+- name: Wait for PostgreSQL before starting Backend
+  wait_for:
+    host: "{{ postgres_container }}"
+    port: "{{ postgres_port }}"
+    timeout: 30
+
+- name: Build Backend Docker Image
+  docker_image:
+    name: "{{ backend_image }}"
+    build:
+      path: "{{ playbook_dir }}/../backend"
+    source: build
+  register: backend_build
+
+- name: Remove existing backend container (if running)
+  docker_container:
+    name: "{{ backend_container }}"
+    state: absent
+  when: backend_build.changed
+
+- name: Run Backend Container
+  docker_container:
+    name: "{{ backend_container }}"
+    image: "{{ backend_image }}"
+    state: started
+    restart_policy: always
+    ports:
+      - "{{ backend_port }}:3000"
+    env_file: "{{ playbook_dir }}/../deployment/.env"
+    networks:
+      - name: "{{ network }}"
+  register: backend_status
+
+- name: Wait for Backend API
+  wait_for:
+    host: "{{ backend_container }}"
+    port: "{{ backend_port }}"
+    timeout: 30
+  when: backend_status.changed
+

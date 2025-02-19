@@ -1,0 +1,92 @@
+- name: Installiere benötigte Pakete (Docker, Python, PostgreSQL, Git)
+  apt:
+    pkg:
+      - apt-transport-https
+      - ca-certificates
+      - curl
+      - software-properties-common
+      - python3
+      - python3-venv
+      - python3-pip
+      - python3-psycopg2
+      - libpq-dev
+      - git
+    state: present
+  become: true
+
+- name: Starte und aktiviere Docker-Dienst
+  service:
+    name: docker
+    state: started
+    enabled: yes
+  become: true
+
+- name: Füge aktuellen Benutzer zur Docker-Gruppe hinzu (Falls nötig)
+  user:
+    name: "{{ ansible_user_id }}"
+    groups: docker
+    append: yes
+  ignore_errors: yes
+  become: true
+
+- name: Stelle sicher, dass die virtuelle Python-Umgebung existiert
+  ansible.builtin.command: python3 -m venv /opt/ansible_venv
+  args:
+    creates: /opt/ansible_venv
+  become: true
+
+- name: Upgrade `pip` in der virtuellen Umgebung mit Shell
+  command: /opt/ansible_venv/bin/python -m pip install --upgrade pip
+  args:
+    creates: /opt/ansible_venv/bin/pip
+  become: true
+
+- name: Installiere Ansible-Module in virtueller Umgebung
+  ansible.builtin.pip:
+    name:
+      - docker
+      - psycopg2-binary
+    virtualenv: /opt/ansible_venv
+  become: true
+
+- name: Prüfe, ob `docker-compose` installiert ist
+  ansible.builtin.stat:
+    path: /usr/local/bin/docker-compose
+  register: docker_compose_check
+
+- name: Installiere `docker-compose`, falls nicht vorhanden
+  get_url:
+    url: "https://github.com/docker/compose/releases/download/2.33.0/docker-compose-{{ ansible_system }}-{{ ansible_architecture }}"
+    dest: "/usr/local/bin/docker-compose"
+    mode: '0755'
+  when: not docker_compose_check.stat.exists
+  become: true
+
+- name: Bereinige nicht verwendete Docker-Container & Images
+  command: docker system prune -af
+  changed_when: false
+  become: true
+
+- name: Prüfe, ob `.env` existiert
+  stat:
+    path: "{{ playbook_dir }}/../deployment/.env"
+  register: env_file_check
+
+- name: Generiere `.env`-Datei aus Template (falls nicht vorhanden)
+  template:
+    src: ansible/templates/.env.j2
+    dest: "{{ playbook_dir }}/../deployment/.env"
+    mode: '0644'
+  when: not env_file_check.stat.exists
+
+- name: Prüfe, ob ein Reboot erforderlich ist (Debian/Ubuntu)
+  stat:
+    path: /var/run/reboot-required
+  register: reboot_required_file
+
+- name: Starte Server neu, falls erforderlich
+  reboot:
+  when: reboot_required_file.stat.exists
+  become: true
+
+

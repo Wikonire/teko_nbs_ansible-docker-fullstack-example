@@ -1,0 +1,128 @@
+- name: Lade `.env`-Datei als Text
+  slurp:
+    src: "{{ playbook_dir }}/../deployment/.env"
+  register: raw_env_file
+
+- name: Konvertiere `.env` in ein Dictionary
+  set_fact:
+    env_vars: "{{ dict(raw_env_file['content'] | b64decode | split('\n') | reject('match', '^#|^$') | map('split', '=', 1) | list) }}"
+
+- name: Debug - Überprüfe `.env`-Variablen
+  debug:
+    var: env_vars
+    
+- name: Zeige PostgreSQL-Umgebungsvariablen
+  debug:
+    msg: "Datenbankname: {{ env_vars.POSTGRES_DB }}, Benutzer: {{ env_vars.POSTGRES_USER }}"
+
+- name: Ensure the PostgreSQL container name and credentials are set
+  set_fact:
+    postgres_container: "{{ env_vars.POSTGRES_CONTAINER | default('postgres_container') }}"
+    postgres_image: "{{ env_vars.POSTGRES_IMAGE | default('postgres:latest') }}"
+    postgres_user: "{{ env_vars.POSTGRES_USER | default('postgres_testuser') }}"
+    postgres_password: "{{ env_vars.POSTGRES_PASSWORD | default('testpass') }}"
+    postgres_db: "{{ env_vars.POSTGRES_DB | default('postgres_db') }}"
+    postgres_port: "{{ env_vars.POSTGRES_PORT | default(5432) }}"
+    backend_network: "{{ env_vars.NETWORK | default('backend_network') }}"
+
+- name: Ensure PostgreSQL volume exists
+  docker_volume:
+    name: postgres_data
+    state: present
+
+- name: Ensure Docker network exists
+  docker_network:
+    name: "{{ backend_network }}"
+    state: present
+
+- name: Pull PostgreSQL Docker Image
+  docker_image:
+    name: "{{ postgres_image }}"
+    source: pull
+
+- name: Remove existing PostgreSQL container (if running)
+  docker_container:
+    name: "{{ postgres_container }}"
+    state: absent
+  ignore_errors: yes
+  
+- name: Run PostgreSQL Container
+  community.docker.docker_container:
+    name: "{{ postgres_container }}"
+    image: "{{ postgres_image }}"
+    state: started
+    restart_policy: always
+    env:
+      POSTGRES_USER: "{{ postgres_user }}"
+      POSTGRES_PASSWORD: "{{ postgres_password }}"
+      POSTGRES_DB: "{{ postgres_db }}"
+    volumes:
+      - "postgres_data:/var/lib/postgresql/data"
+    ports:
+      - "{{ postgres_port }}:5432"
+    networks:
+      - name: "{{ backend_network }}"
+
+- name: Warte, bis PostgreSQL bereit ist
+  community.postgresql.postgresql_ping:
+    login_host: "localhost"
+    login_user: "{{ postgres_user }}"
+    login_password: "{{ postgres_password }}"
+    db: "{{ postgres_db }}"
+  register: pg_health
+  retries: 10
+  delay: 5
+  until: pg_health.is_available
+
+- name: Ensure database exists
+  community.postgresql.postgresql_db:
+    name: "{{ postgres_db }}"
+    owner: "{{ postgres_user }}"
+    login_user: "{{ postgres_user }}"
+    login_password: "{{ postgres_password }}"
+    login_host: "{{ postgres_container }}"  # Korrektur: Statt localhost wird der Container-Name genutzt
+    login_port: "{{ postgres_port }}"
+  become: no
+
+- name: Ensure users table exists
+  community.postgresql.postgresql_query:
+    db: "{{ postgres_db }}"
+    login_user: "{{ postgres_user }}"
+    login_password: "{{ postgres_password }}"
+    query: |
+      CREATE TABLE IF NOT EXISTS users (
+        id SERIAL PRIMARY KEY,
+        name VARCHAR(100),
+        email VARCHAR(100) UNIQUE
+      );
+
+- name: Check if `users` table contains data
+  command: >
+    docker exec {{ postgres_container }} psql -U {{ postgres_user }} -d {{ postgres_db }} -tAc
+    "SELECT COUNT(*) FROM users;"
+  register: user_count
+
+- name: Insert example users if table is empty
+  command: >
+    docker exec {{ postgres_container }} psql -U {{ postgres_user }} -d {{ postgres_db }} -c
+    "INSERT INTO users (name, email) VALUES
+    ('Linus Torvalds', 'penguin@kernel.org'),
+    ('Ada Lovelace', 'ada@babbage.com'),
+    ('Sheldon Cooper', 'bazinga@caltech.edu'),
+    ('Rick Sanchez', 'rick@c137.com'),
+    ('Tony Stark', 'ironman@starkindustries.com'),
+    ('Elon Tusk', 'notelon@mars.com'),
+    ('GLaDOS', 'glados@aperturescience.com'),
+    ('Mario Mario', 'itsme@mushroomkingdom.com'),
+    ('Gordon Freeman', 'hl3@valve.com'),
+    ('Bender Rodriguez', 'kissmyshiny@metalbutt.com'),
+    ('Doctor Who', 'doctor@tardis.gallifrey'),
+    ('Spock', 'logic@starfleet.com'),
+    ('Jean-Luc Picard', 'teaearlgreyhot@enterprise.com'),
+    ('Walter White', 'heisenberg@bluecrystal.com'),
+    ('Darth Vader', 'iamyourfather@deathstar.com')
+    ON CONFLICT (email) DO NOTHING;"
+  when: user_count.stdout.strip() == "0"
+
+
+

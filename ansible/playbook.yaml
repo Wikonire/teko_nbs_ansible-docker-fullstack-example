@@ -1,0 +1,14 @@
+- name: Deployment von Nginx, PostgreSQL und Express mit Docker Compose
+  hosts: localhost
+  become: true
+  vars_files:
+    - vars.yaml
+    - vault/secrets.yaml
+  roles:
+    - common
+    - postgres
+    - backend
+    - nginx
+    
+   
+

@@ -1,0 +1,88 @@
+- name: Load environment variables for Nginx
+  include_vars:
+    file: "{{ playbook_dir }}/../deployment/.env"
+    name: env_vars
+
+- name: Ensure Nginx container and network variables are set
+  set_fact:
+    nginx_container: "{{ env_vars.NGINX_CONTAINER | default('nginx_container') }}"
+    nginx_image: "{{ env_vars.NGINX_IMAGE | default('nginx:latest') }}"
+    nginx_port: "{{ env_vars.NGINX_PORT | default(8080) }}"
+    backend_network: "{{ env_vars.NETWORK | default('backend_network') }}"
+    backend_container: "{{ env_vars.BACKEND_CONTAINER | default('backend_container') }}"
+    backend_port: "{{ env_vars.BACKEND_PORT | default(3000) }}"
+
+- name: Ensure Docker network exists
+  docker_network:
+    name: "{{ backend_network }}"
+    state: present
+
+- name: Remove existing Nginx container (if running)
+  docker_container:
+    name: "{{ nginx_container }}"
+    state: absent
+  ignore_errors: yes
+
+- name: Run Nginx Container
+  community.docker.docker_container:
+    name: "{{ nginx_container }}"
+    image: "{{ nginx_image }}"
+    state: started
+    restart_policy: always
+    ports:
+      - "{{ nginx_port }}:80"
+    volumes:
+      - "{{ playbook_dir }}/../nginx/nginx.conf:/etc/nginx/nginx.conf:ro"
+      - "{{ playbook_dir }}/../nginx/index.html:/usr/share/nginx/html/index.html:ro"
+    networks:
+      - name: "{{ backend_network }}"
+  register: nginx_status
+
+- name: Check if Backend is reachable before starting Nginx
+  uri:
+    url: "http://{{ backend_container }}:{{ backend_port }}/health"
+    method: GET
+    status_code: 200
+  register: backend_status
+  retries: 10
+  delay: 5
+  until: backend_status.status == 200
+
+- name: Wait for Nginx to be ready
+  wait_for:
+    host: "localhost"
+    port: "{{ nginx_port }}"
+    timeout: 30
+  when: nginx_status.changed
+  
+- name: Check if Backend is reachable before starting Nginx
+  uri:
+    url: "http://{{ backend_container }}:{{ backend_port }}/health"
+    method: GET
+    status_code: 200
+  register: backend_status
+  retries: 10
+  delay: 5
+  until: backend_status.status == 200
+  when: nginx_status.changed
+
+
+- name: Starte Docker-Compose mit `.env`-Datei
+  community.docker.docker_compose:
+    project_src: "{{ playbook_dir }}/../deployment"
+    state: present
+  register: docker_compose_result
+
+- name: Zeige Fehler von `docker-compose`
+  debug:
+    var: docker_compose_result
+
+- name: Zeige Logs fehlerhafter Container
+  shell: |
+    docker ps -a --filter "status=exited" --format "{{ '{{' }}.Names{{ '}}' }}" | xargs -I {} docker logs {}
+  register: docker_logs
+  failed_when: false
+
+- name: Debug - Container Logs
+  debug:
+    msg: "{{ docker_logs.stdout_lines }}"

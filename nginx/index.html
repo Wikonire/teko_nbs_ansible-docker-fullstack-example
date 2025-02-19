@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Benutzerliste</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; padding: 20px; }
+        table { width: 100%; border-collapse: collapse; }
+        th, td { padding: 10px; border: 1px solid #ddd; text-align: left; }
+        th { background-color: #f4f4f4; }
+    </style>
+    <script>
+        async function fetchUsers() {
+            try {
+                const response = await fetch("/api/users");
+                if (!response.ok) throw new Error("Fehler beim Abrufen der Daten");
+                const users = await response.json();
+                document.getElementById("users-table").innerHTML =
+                    "<tr><th>ID</th><th>Name</th><th>Email</th></tr>" +
+                    users.map(user => `<tr><td>${user.id}</td><td>${user.name}</td><td>${user.email}</td></tr>`).join("");
+            } catch (error) {
+                document.getElementById("error").textContent = "Daten konnten nicht geladen werden!";
+            }
+        }
+        window.onload = fetchUsers;
+    </script>
+</head>
+<body>
+    <h1>Benutzerliste</h1>
+    <p id="error" style="color: red;"></p>
+    <table id="users-table">
+        <tr><td>Lade Daten...</td></tr>
+    </table>
+</body>
+</html>
+
