@@ -2,9 +2,34 @@
 # Dokumentation für das Projekt: Docker-gestütztes Deployment von Nginx, PostgreSQL und Express-Backend mit Ansible
 
 ## Quick start
-Starte das Deployment mit:
+
+### Ansible Vault: Geheimnisse verwalten
+
+#### Datei `ansible/vault/secrets.yml` erstellen
+
 ```bash
-ansible-playbook -i ansible/inventory ansible/playbook.yaml --ask-vault-pass --ask-become-pass
+ansible-vault create ansible/vault/secrets.yml
+```
+
+Füge dort z. B. folgendes ein:
+
+```yaml
+postgres_password: "testpass"
+backend_secret_key: "supergeheimes-token"
+```
+
+Die Datei mit `STRG + X` speichern, dann `Y`, dann `Enter`.
+
+#### Bestehende Datei verschlüsseln
+
+Falls eine bestehende Datei verschlüsselt werden soll:
+
+```bash
+ansible-vault encrypt ansible/vault/secrets.yml
+```
+### Deployment starten
+```bash
+ansible-playbook -i ansible/inventory.ini ansible/playbook.yaml --ask-vault-pass --ask-become-pass
 ```
 
 ## Prerequisites (Voraussetzungen)
@@ -26,7 +51,7 @@ sudo apt install -y python3 python3-pip git
 pip3 install ansible docker
 ```
 
-### Aktuellen User zur Docker-Gruppe hinzufügen um es ohne Adminrechte auszuführen
+### Aktuellen User zur Docker-Gruppe hinzufügen, um es ohne Adminrechte auszuführen
 ```bash
 sudo usermod -aG docker $USER
 newgrp docker
@@ -131,7 +156,7 @@ pip 23.0.1 from /usr/lib/python3/dist-packages/pip (python 3.11)
 
 ### Inventory Erreichbarkeit testen
 
-Sobald dein **inventory** bereit ist, kannst du testen, ob Ansible den Host erreichen kann:
+Testen, ob Ansible den Host erreichen kann:
 
 ```bash
 ansible all -i inventory -m ping
@@ -139,7 +164,7 @@ ansible all -i inventory -m ping
 
 Erwartete Ausgabe:
 
-```json
+```
 localhost | SUCCESS => {
     "changed": false,
     "ping": "pong"
@@ -234,7 +259,7 @@ ansible-playbook ansible/playbook.yaml --syntax-check
 - Sichere Handhabung von Passwörtern
 - Bereit für Produktion & CI/CD
 
-Dieses Ansible-Projekt ist professionell aufgestellt und einsatzbereit!
+
 
 
 

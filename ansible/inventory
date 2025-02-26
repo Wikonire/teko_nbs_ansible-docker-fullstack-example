@@ -1,3 +1,4 @@
-[local]
-localhost ansible_connection=local
-
+[containers]
+backend_container ansible_connection=docker
+nginx_container ansible_connection=docker
+postgres_container ansible_connection=docker

@@ -1,11 +1,11 @@
 # Verwendung vom schlanken Node.js 22 Image (Alpine weil weniger Speicherverbrauch)
 FROM node:22-alpine
 
-WORKDIR /opt/backend
+WORKDIR /app
 
 COPY package.json package-lock.json ./
 
-RUN npm install --only=production
+RUN npm install
 
 COPY server.js .
 
