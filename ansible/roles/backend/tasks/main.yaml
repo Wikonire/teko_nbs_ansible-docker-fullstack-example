@@ -1,7 +1,15 @@
-- name: Load environment variables for backend
-  include_vars:
-    file: "{{ playbook_dir }}/../deployment/.env"
-    name: env_vars
+- name: Lade `.env`-Datei als Text
+  slurp:
+    src: "{{ playbook_dir }}/../deployment/.env"
+  register: raw_env_file
+
+- name: Konvertiere `.env` in ein Dictionary
+  set_fact:
+    env_vars: "{{ dict(raw_env_file['content'] | b64decode | split('\n') | reject('match', '^#|^$') | map('split', '=', 1) | list) }}"
+
+- name: Debug - Überprüfe `.env`-Variablen
+  debug:
+    var: env_vars
 
 - name: Ensure backend and network variables are set
   set_fact:
@@ -17,11 +25,16 @@
     name: "{{ network }}"
     state: present
 
-- name: Wait for PostgreSQL before starting Backend
-  wait_for:
-    host: "{{ postgres_container }}"
-    port: "{{ postgres_port }}"
-    timeout: 30
+- name: Warte, bis PostgreSQL bereit ist
+  community.postgresql.postgresql_ping:
+    login_host: "localhost"
+    login_user: "{{ postgres_user }}"
+    login_password: "{{ postgres_password }}"
+    db: "{{ postgres_db }}"
+  register: pg_health
+  retries: 10
+  delay: 10
+  until: pg_health.is_available
 
 - name: Build Backend Docker Image
   docker_image:
@@ -50,30 +63,27 @@
       - name: "{{ network }}"
   register: backend_status
 
+- name: Überprüfe den Backend-Status
+  uri:
+    url: "http://localhost:3000/api/users"
+    method: GET
+    status_code: 200
+    timeout: 10  # Setzt das Timeout für die HTTP-Anfrage
+  register: backend_status
+  retries: 10  # Anzahl der Wiederholungsversuche
+  delay: 5  # Zeit in Sekunden zwischen den Versuchen
+  until: backend_status is defined and backend_status.status == 200
+
+- name: Debug Backend-Status (im Fehlerfall)
+  debug:
+    var: backend_status
+  failed_when: backend_status is not defined or backend_status.status != 200
+
+
+
 - name: Wait for Backend API
   wait_for:
     host: "{{ backend_container }}"
     port: "{{ backend_port }}"
     timeout: 30
   when: backend_status.changed
-
-
-- name: Starte Docker-Compose mit `.env`-Datei
-  community.docker.docker_compose:
-    project_src: "{{ playbook_dir }}/../deployment"
-    state: present
-  register: docker_compose_result
-
-- name: Zeige Fehler von `docker-compose`
-  debug:
-    var: docker_compose_result
-
-- name: Zeige Logs fehlerhafter Container
-  shell: |
-    docker ps -a --filter "status=exited" --format "{{ '{{' }}.Names{{ '}}' }}" | xargs -I {} docker logs {}
-  register: docker_logs
-  failed_when: false
-
-- name: Debug - Container Logs
-  debug:
-    msg: "{{ docker_logs.stdout_lines }}"

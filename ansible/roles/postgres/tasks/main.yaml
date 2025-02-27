@@ -25,6 +25,11 @@
     postgres_port: "{{ env_vars.POSTGRES_PORT | default(5432) }}"
     backend_network: "{{ env_vars.NETWORK | default('backend_network') }}"
 
+- name: Zeige PostgreSQL-Umgebungsvariablen, sind es die richtigen?
+  debug:
+    msg: "    postgres_container: {{ postgres_container }}\n postgres_image: {{ postgres_image }}\n postgres_user: {{ postgres_user }}\n postgres_password: {{postgres_password }}\n postgres_db: {{ postgres_db }}\n postgres_port: {{ postgres_port}}\n backend_network: {{backend_network}}"
+
+
 - name: Ensure PostgreSQL volume exists
   docker_volume:
     name: postgres_data
@@ -63,25 +68,39 @@
     networks:
       - name: "{{ backend_network }}"
 
+
+- name: Verbinde mit PostgreSQL
+  postgresql_ping:
+    db: postgres_test_db
+    login_host: localhost
+    login_user: postgres_testuser
+    login_password: testpass
+
+
+- name: Add postgres_container host with a non-standard port local to your machines
+  ansible.builtin.add_host:
+    name: '0.0.0.0:{{ postgres_container }}'
+
 - name: Warte, bis PostgreSQL bereit ist
   community.postgresql.postgresql_ping:
-    login_host: "{{ postgres_container }}"
+    login_host: "localhost"
     login_user: "{{ postgres_user }}"
     login_password: "{{ postgres_password }}"
     db: "{{ postgres_db }}"
   register: pg_health
-  retries: 10
-  delay: 5
+  retries: 2
+  delay: 10
   until: pg_health.is_available
 
 - name: Ensure database exists
   community.postgresql.postgresql_db:
-    name: "{{ postgres_db }}"
+    db: "{{ postgres_db }}"
     owner: "{{ postgres_user }}"
     login_user: "{{ postgres_user }}"
     login_password: "{{ postgres_password }}"
-    login_host: "{{ postgres_container }}"  # Korrektur: Statt localhost wird der Container-Name genutzt
+    login_host: "localhost"
     login_port: "{{ postgres_port }}"
+    encoding: UTF8
   become: no
 
 - name: Ensure users table exists
@@ -89,6 +108,7 @@
     db: "{{ postgres_db }}"
     login_user: "{{ postgres_user }}"
     login_password: "{{ postgres_password }}"
+    login_host: "localhost"
     query: |
       CREATE TABLE IF NOT EXISTS users (
         id SERIAL PRIMARY KEY,
@@ -125,4 +145,5 @@
   when: user_count.stdout.strip() == "0"
 
 
+-
 

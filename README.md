@@ -238,7 +238,7 @@ echo "ansible/vault-pass.txt" >> .gitignore
 ### Ansible Playbook ausführen:
 
 ```bash
-ansible-playbook -i inventory playbook.yml --ask-vault-pass
+ansible-playbook -i inventory.ini playbook.yml --ask-vault-pass
 ```
 
 ### Backend & Datenbank testen:

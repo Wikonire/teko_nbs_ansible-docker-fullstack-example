@@ -6,7 +6,7 @@ const port = process.env.BACKEND_PORT || 3000;
 // PostgreSQL-Verbindung konfigurieren
 const pool = new Pool({
     user: process.env.POSTGRES_USER || 'postgres_testuser',
-    host: 'postgres_container', // Container-Name des PostgreSQL-Servers (Docker-Network)
+    host: 'postgres_container',
     database: process.env.POSTGRES_DB || 'postgres_test_db',
     password: process.env.POSTGRES_PASSWORD || 'testpass',
     port: process.env.POSTGRES_PORT || 5432,
@@ -24,7 +24,7 @@ app.get('/api/users', async (req, res) => {
 });
 
 // Server starten
-app.listen(port, () => {
+app.listen(port, 'localhost',() => {
     console.log(`🚀 Backend läuft auf Port ${port}`);
 });
 
