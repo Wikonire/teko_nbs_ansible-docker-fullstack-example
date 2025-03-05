@@ -12,6 +12,15 @@ const pool = new Pool({
     port: process.env.POSTGRES_PORT || 5432,
 });
 
+pool.connect((err, client, release) => {
+    if (err) {
+        console.error('🚨 Fehler beim Verbinden mit der Datenbank:', err.stack);
+    } else {
+        console.log('✅ Erfolgreich mit der PostgreSQL-Datenbank verbunden');
+    }
+    release();
+});
+
 // API-Route für User aus der Datenbank
 app.get('/api/users', async (req, res) => {
     try {
