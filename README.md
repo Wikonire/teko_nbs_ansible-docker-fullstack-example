@@ -145,4 +145,3 @@ pip 23.0.1
 - **Modulierbar & Wartbar**: Klare Trennung der Rollen und Konfigurationen.
 - **Bereit für Produktion**: Problemloses Deployment in einer produktionsähnlichen Umgebung möglich.
 
-Falls weitere Fragen oder Probleme auftreten, steht die Dokumentation als Nachschlagewerk bereit.
