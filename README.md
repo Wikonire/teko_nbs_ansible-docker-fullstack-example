@@ -8,13 +8,13 @@
 #### Datei `ansible/vault/secrets.yml` erstellen
 
 ```bash
-ansible-vault create ansible/vault/secrets.yml
+  ansible-vault create ansible/vault/secrets.yml
 ```
 
 Füge dort z. B. folgendes ein:
 
 ```yaml
-postgres_password: "testpass"
+ postgres_password: "testpass"
 ```
 
 Die Datei mit `STRG + X` speichern, dann `Y`, dann `Enter`.
@@ -28,7 +28,7 @@ Falls eine bestehende Datei verschlüsselt werden soll, wie das erstellte `ansib
 ```
 ### Deployment starten
 ```bash
-  ansible-playbook -i ansible/inventory.ini ansible/playbook.yaml --ask-vault-pass --ask-become-pass
+  ansible-playbook -i ansible/inventory ansible/playbook.yaml --ask-vault-pass --ask-become-pass
 ```
 
 ## Prerequisites (Voraussetzungen)
@@ -50,10 +50,10 @@ sudo apt install -y python3 python3-pip git
 pip3 install ansible docker
 ```
 
-### Aktuellen User zur Docker-Gruppe hinzufügen, um es ohne Adminrechte auszuführen
+### Evt aktuellen User zur Docker-Gruppe hinzufügen, um es ohne Adminrechte auszuführen
 ```bash
-sudo usermod -aG docker $USER
-newgrp docker
+  sudo usermod -aG docker $USER
+  newgrp docker
 ```
 
 Hinweis: Damit die Änderungen wirken, muss der Benutzer sich neu anmelden oder den Befehl `newgrp docker` ausführen.
