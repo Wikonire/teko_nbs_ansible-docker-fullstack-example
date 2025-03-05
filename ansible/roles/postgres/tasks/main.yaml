@@ -7,14 +7,6 @@
   set_fact:
     env_vars: "{{ dict(raw_env_file['content'] | b64decode | split('\n') | reject('match', '^#|^$') | map('split', '=', 1) | list) }}"
 
-- name: Debug - Überprüfe `.env`-Variablen
-  debug:
-    var: env_vars
-    
-- name: Zeige PostgreSQL-Umgebungsvariablen
-  debug:
-    msg: "Datenbankname: {{ env_vars.POSTGRES_DB }}, Benutzer: {{ env_vars.POSTGRES_USER }}"
-
 - name: Ensure the PostgreSQL container name and credentials are set
   set_fact:
     postgres_container: "{{ env_vars.POSTGRES_CONTAINER | default('postgres_container') }}"
@@ -24,11 +16,6 @@
     postgres_db: "{{ env_vars.POSTGRES_DB | default('postgres_db') }}"
     postgres_port: "{{ env_vars.POSTGRES_PORT | default(5432) }}"
     backend_network: "{{ env_vars.NETWORK | default('backend_network') }}"
-
-- name: Zeige PostgreSQL-Umgebungsvariablen, sind es die richtigen?
-  debug:
-    msg: "    postgres_container: {{ postgres_container }}\n postgres_image: {{ postgres_image }}\n postgres_user: {{ postgres_user }}\n postgres_password: {{postgres_password }}\n postgres_db: {{ postgres_db }}\n postgres_port: {{ postgres_port}}\n backend_network: {{backend_network}}"
-
 
 - name: Ensure PostgreSQL volume exists
   docker_volume:
@@ -50,7 +37,7 @@
     name: "{{ postgres_container }}"
     state: absent
   ignore_errors: yes
-  
+
 - name: Run PostgreSQL Container
   community.docker.docker_container:
     name: "{{ postgres_container }}"
@@ -69,27 +56,19 @@
       - name: "{{ backend_network }}"
 
 
-- name: Verbinde mit PostgreSQL
-  postgresql_ping:
-    db: postgres_test_db
-    login_host: localhost
-    login_user: postgres_testuser
-    login_password: testpass
-
-
 - name: Add postgres_container host with a non-standard port local to your machines
   ansible.builtin.add_host:
     name: '0.0.0.0:{{ postgres_container }}'
 
 - name: Warte, bis PostgreSQL bereit ist
   community.postgresql.postgresql_ping:
-    login_host: "localhost"
+    login_host: localhost
     login_user: "{{ postgres_user }}"
     login_password: "{{ postgres_password }}"
     db: "{{ postgres_db }}"
   register: pg_health
-  retries: 2
-  delay: 10
+  retries: 5
+  delay: 5
   until: pg_health.is_available
 
 - name: Ensure database exists
@@ -98,7 +77,7 @@
     owner: "{{ postgres_user }}"
     login_user: "{{ postgres_user }}"
     login_password: "{{ postgres_password }}"
-    login_host: "localhost"
+    login_host: localhost
     login_port: "{{ postgres_port }}"
     encoding: UTF8
   become: no
@@ -128,6 +107,29 @@
     "INSERT INTO users (name, email) VALUES
     ('Linus Torvalds', 'penguin@kernel.org'),
     ('Ada Lovelace', 'ada@babbage.com'),
+    ('Grace Hopper', 'debug@compiler.com'),
+    ('Margaret Hamilton', 'apollo@mooncode.com'),
+    ('Sailor Moon', 'moonlight@justice.com'),
+    ('Samus Aran', 'chozo@metroid.com'),
+    ('Sophie Wilson', 'arm@raspberry.com'),
+    ('Leia Organa', 'hope@rebellion.com'),
+    ('Ian McKellen', 'magneto@gaynetflix.com'),
+    ('Lavender Menace', 'lesbian@secondwave.com'),
+    ('Dana Scully', 'scientist@xfiles.com'),
+    ('Korra', 'avatar@republiccity.com'),
+    ('Ellie', 'lastofus@fireflies.com'),
+    ('Willow Rosenberg', 'magic@buffyverse.com'),
+    ('Catra', 'forcecaptain@etheria.com'),
+    ('Chiana', 'nebari@unrealizedreality.com'),
+    ('Catherine Halsey', 'ai@unsc.com'),
+    ('Lana Kane', 'dangerzone@agency.com'),
+    ('Turing', 'codebreaker@bletchley.park'),
+    ('Yorick Brown', 'monkey@lastman.com'),
+    ('Marsha P. Johnson', 'pride@stonewall.com'),
+    ('Alan Turing', 'enigmasolver@gov.uk'),
+    ('Sylvia Rivera', 'activist@queerrevolution.com'),
+    ('Anita Sarkeesian', 'feministfrequency@popculture.com'),
+    ('Harley Quinn', 'harleen@puddin.com'),
     ('Sheldon Cooper', 'bazinga@caltech.edu'),
     ('Rick Sanchez', 'rick@c137.com'),
     ('Tony Stark', 'ironman@starkindustries.com'),

@@ -3,14 +3,6 @@
     src: "{{ playbook_dir }}/../deployment/.env"
   register: raw_env_file
 
-- name: Konvertiere `.env` in ein Dictionary
-  set_fact:
-    env_vars: "{{ dict(raw_env_file['content'] | b64decode | split('\n') | reject('match', '^#|^$') | map('split', '=', 1) | list) }}"
-
-- name: Debug - Überprüfe `.env`-Variablen
-  debug:
-    var: env_vars
-
 - name: Ensure backend and network variables are set
   set_fact:
     backend_image: "{{ env_vars.BACKEND_IMAGE | default('backend_image') }}"
@@ -27,7 +19,7 @@
 
 - name: Warte, bis PostgreSQL bereit ist
   community.postgresql.postgresql_ping:
-    login_host: "localhost"
+    login_host: localhost
     login_user: "{{ postgres_user }}"
     login_password: "{{ postgres_password }}"
     db: "{{ postgres_db }}"
@@ -63,6 +55,13 @@
       - name: "{{ network }}"
   register: backend_status
 
+- name: Wait for Backend API
+  wait_for:
+    host: localhost
+    port: "{{ backend_port }}"
+    timeout: 30
+  when: backend_status.changed
+
 - name: Überprüfe den Backend-Status
   uri:
     url: "http://localhost:3000/api/users"
@@ -70,7 +69,7 @@
     status_code: 200
     timeout: 10  # Setzt das Timeout für die HTTP-Anfrage
   register: backend_status
-  retries: 10  # Anzahl der Wiederholungsversuche
+  retries: 3  # Anzahl der Wiederholungsversuche
   delay: 5  # Zeit in Sekunden zwischen den Versuchen
   until: backend_status is defined and backend_status.status == 200
 
@@ -79,11 +78,9 @@
     var: backend_status
   failed_when: backend_status is not defined or backend_status.status != 200
 
-
-
 - name: Wait for Backend API
   wait_for:
-    host: "{{ backend_container }}"
+    host: localhost
     port: "{{ backend_port }}"
     timeout: 30
   when: backend_status.changed

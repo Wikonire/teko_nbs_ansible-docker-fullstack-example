@@ -7,10 +7,6 @@
   set_fact:
     env_vars: "{{ dict(raw_env_file['content'] | b64decode | split('\n') | reject('match', '^#|^$') | map('split', '=', 1) | list) }}"
 
-- name: Debug - Überprüfe `.env`-Variablen
-  debug:
-    var: env_vars
-
 - name: Ensure Nginx container and network variables are set
   set_fact:
     nginx_container: "{{ env_vars.NGINX_CONTAINER | default('nginx_container') }}"
@@ -46,9 +42,4 @@
       - name: "{{ backend_network }}"
   register: nginx_status
 
-- name: Wait for Nginx to be ready
-  wait_for:
-    host: "localhost"
-    port: "{{ nginx_port }}"
-    timeout: 30
-  when: nginx_status.changed
+

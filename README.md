@@ -3,6 +3,11 @@
 
 ## Quick start
 
+Zum testen 
+```bash
+  docker stop $(docker ps -aq) && docker rm $(docker ps -aq) && docker volume prune -f && docker network prune -f
+```
+
 ### Ansible Vault: Geheimnisse verwalten
 
 #### Datei `ansible/vault/secrets.yml` erstellen
