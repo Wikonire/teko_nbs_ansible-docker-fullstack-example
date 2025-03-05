@@ -90,50 +90,46 @@ Diese Struktur ermöglicht eine skalierbare, wartbare und sichere Bereitstellung
 
 ## Ordner- und Projektstruktur
 
-```
-project-root/
-│── ansible.cfg
-|
-│── .git/
-|   │── ... (git-stuff) 
-|
-│── LICENSE
-│── nginx/
-│   ├── nginx.conf
-│   ├── index.html
-|
-│── deployment/
-│   ├── docker-compose.yaml
-|   │── .env
-|
-│── backend/
-│   ├── Dockerfile
-│   ├── server.js
-│   ├── package.json
-│   ├── package-lock.json
-│   ├── node_modules
-|       ├── ... (node_modules stuff) 
-|
-│── ansible/
-│   ├── playbook.yaml
-│   ├── inventory
-│   ├── templates/
-│   │   ├── env.j2
+```text
+teko_nbs_ansible-docker-fullstack-example
+├── .idea/                   # IntelliJ IDEA-Projektdateien
+├── ansible/                 # Ansible Konfiguration und Rollen
 │   ├── roles/
-│   │   ├── common/
-│   │   │   ├── tasks/main.yaml
-│   │   ├── nginx/
-│   │   │   ├── tasks/main.yaml
-│   │   ├── backend/
-│   │   │   ├── tasks/main.yaml
-│   │   ├── postgres/
-│   │   │   ├── tasks/main.yaml
-│   ├── vars.yaml
-│   ├── deploy.yaml
+│   │   ├── backend/         # Backend-spezifische Rolle
+│   │   │   └── tasks/
+│   │   │       └── main.yaml
+│   │   ├── common/          # Gemeinsame Konfigurationsrolle
+│   │   │   └── tasks/
+│   │   │       └── main.yaml
+│   │   ├── nginx/           # Nginx-spezifische Rolle
+│   │   │   └── tasks/
+│   │   │       └── main.yaml
+│   │   └── postgres/        # Postgres-spezifische Rolle
+│   │       └── tasks/
+│   │           └── main.yaml
+│   ├── templates/
+│   │   └── env.j2           # Jinja2-Umgebungstemplate
 │   ├── vault/
-│   │   ├── secrets.yaml
-|
-│── README.md
+│   │   └── secrets.yaml     # Verschlüsselte Secrets
+│   ├── ansible.log          # Log-Datei (optional)
+│   ├── inventory            # Server-Inventar
+│   └── playbook.yaml        # Ansible Playbook
+├── backend/                 # Node.js-Backend
+│   ├── node_modules/        # Abhängigkeiten automatisch von npm generiert
+│   ├── Dockerfile           # Docker-Builddatei für das Backend
+│   ├── package.json         # Paketdefinition und Abhängigkeiten
+│   ├── package-lock.json    # Automatisch generiertes Abhängigkeitsmanagement
+│   └── server.js            # Haupt-Server-Implementierung
+├── deployment/              # Deployment-Konfigurationsdateien
+│   ├── .env                 # Umgebungsvariablen
+│   └── docker-compose.yaml  # Konfiguration für den Docker-Stack
+├── nginx/                   # Nginx-Server Konfiguration
+│   ├── index.html           # Statische HTML-Seite
+│   └── nginx.conf           # Konfigurationsdatei für Nginx
+├── ansible.cfg              # Hauptkonfigurationsdatei für Ansible
+├── LICENSE                  # Lizenzinformationen
+├── package-lock.json        # Projektweite Abhängigkeitsmanagementdatei
+└── README.md                # Projektbeschreibung und Dokumentation
 
 ```
 
