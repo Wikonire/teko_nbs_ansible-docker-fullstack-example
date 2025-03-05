@@ -1,307 +1,148 @@
-
-# Dokumentation für das Projekt: Docker-gestütztes Deployment von Nginx, PostgreSQL und Express-Backend mit Ansible
-
-## Quick start
-
-Zum testen 
-```bash
-  docker stop $(docker ps -aq) && docker rm $(docker ps -aq) && docker volume prune -f && docker network prune -f
+# **Dokumentation: Docker-gestütztes Deployment von Nginx, PostgreSQL und Express-Backend mit Ansible**
+## **Quick Start**
+Um alle laufenden Container, Volumes und Netzwerke zu entfernen und frisch zu starten, führe folgenden Befehl aus:
+``` bash
+docker stop $(docker ps -aq) && docker rm $(docker ps -aq) && docker volume prune -f && docker network prune -f
 ```
-
-### Ansible Vault: Geheimnisse verwalten
-
-#### Datei `ansible/vault/secrets.yml` erstellen
-
-```bash
-  ansible-vault create ansible/vault/secrets.yml
+## **Ansible Vault: Handhabung von Geheimnissen**
+### **1. Anlegen der Datei `ansible/vault/secrets.yml`**
+Erstelle die Datei:
+``` bash
+ansible-vault create ansible/vault/secrets.yml
 ```
-
-Füge dort z. B. folgendes ein:
-
-```yaml
- postgres_password: "testpass"
+Füge beispielsweise folgende Secrets ein:
+``` yaml
+postgres_password: "testpass"
 ```
-
-Die Datei mit `STRG + X` speichern, dann `Y`, dann `Enter`.
-
-#### Bestehende Datei verschlüsseln
-
-Falls eine bestehende Datei verschlüsselt werden soll, wie das erstellte `ansible/vault/secrets.yml`:
-
-```bash
-  ansible-vault encrypt ansible/vault/secrets.yml
+**Speichern:** Nach Eingabe der Secrets `STRG + X` drücken, `Y` bestätigen und mit `Enter` die Datei speichern.
+### **2. Bestehende Datei verschlüsseln**
+Falls Du eine bereits bestehende Datei verschlüsseln möchtest (z. B. `ansible/vault/secrets.yml`), führe folgenden Befehl aus:
+``` bash
+ansible-vault encrypt ansible/vault/secrets.yml
 ```
-### Deployment starten
-```bash
-  ansible-playbook -i ansible/inventory ansible/playbook.yaml --ask-vault-pass --ask-become-pass
+## **Deployment starten**
+So führst Du das Deployment aus:
+``` bash
+ansible-playbook -i ansible/inventory ansible/playbook.yaml --ask-vault-pass --ask-become-pass
 ```
-
-## Prerequisites (Voraussetzungen)
-Dies sind die Voraussetzungen und Vorarbeiten die nötig sind:
-### Notwendige Pakete installieren
-```bash
+## **Prerequisites (Voraussetzungen)**
+Stelle sicher, dass alle erforderlichen Pakete und Tools installiert sind, bevor Du das Deployment startest.
+### **1. Notwendige Pakete installieren**
+Führe diese Befehle aus:
+``` bash
+# System aktualisieren
 sudo apt update && sudo apt upgrade -y
 
 # Gnome Terminal installieren (optional)
 sudo apt install gnome-terminal -y
 
-# Docker & Compose installieren
+# Docker & Docker Compose installieren
 sudo apt install -y docker.io docker-compose
 
 # Ansible & Python-Abhängigkeiten installieren
 sudo apt install -y python3 python3-pip git
 
-# Ansible-Module für Docker installieren
+# Notwendige Ansible-Module installieren
 pip3 install ansible docker
 ```
-
-### Evt aktuellen User zur Docker-Gruppe hinzufügen, um es ohne Adminrechte auszuführen
-```bash
-  sudo usermod -aG docker $USER
-  newgrp docker
+### **2. Benutzer zur Docker-Gruppe hinzufügen**
+Falls Du Docker-Kommandos ohne `sudo` ausführen möchtest, füge Deinen Benutzer zur Docker-Gruppe hinzu:
+``` bash
+sudo usermod -aG docker $USER
+newgrp docker
 ```
-
-Hinweis: Damit die Änderungen wirken, muss der Benutzer sich neu anmelden oder den Befehl `newgrp docker` ausführen.
-
-Weitere Ansible Vault Dokumentation:
-[Ansible Vault Offizielle Doku](https://docs.ansible.com/ansible/2.8/user_guide/vault.html)
-
-## Einleitung
-
-Dieses Projekt wird im Rahmen des Faches **Netzwerkbetriebsystem** bei **Olivier Büchel** durchgeführt und dient als benotete Abgabe für das Fach.
-Es bietet eine vollständige, containerisierte Lösung für den Betrieb einer Webanwendung mit folgenden Komponenten:
-
-- PostgreSQL als Datenbank
+Hinweis: Melde Dich neu an oder führe `newgrp docker` aus, damit die Änderungen sofort wirksam werden.
+**Zusätzliche Dokumentation:**
+[Ansible Vault Offizielle Dokumentation](https://docs.ansible.com/ansible/2.8/user_guide/vault.html)
+## **Einleitung**
+Dieses Projekt wurde im Rahmen des Moduls **Netzwerkbetriebssysteme** unter Leitung von **Olivier Büchel** erstellt. Es handelt sich um eine vollständige, containerisierte Lösung für die Bereitstellung einer Webanwendung mittels Docker und Ansible.
+Das Ziel ist, eine **sichere, skalierbare und wartbare** Infrastruktur bereitzustellen, die sich aus folgenden Komponenten zusammensetzt:
+- PostgreSQL als relationale Datenbank
 - Express.js als Backend-Server
 - Nginx als Reverse Proxy und Webserver
 
-Das Deployment erfolgt automatisiert mit Ansible und nutzt Docker, um die Container einheitlich und reproduzierbar zu verwalten.  
-Diese Struktur ermöglicht eine skalierbare, wartbare und sichere Bereitstellung der Anwendung.
+Das Deployment erfolgt vollständig mit **Ansible** und automatisiert alle notwendigen Schritte, wie die Erstellung von Containern, die Datenbankinitialisierung und das Deployment der Anwendung.
+## **Verwendete Technologien**
+- **Docker** & **Docker Compose**: Container-Orchestrierung
+- **Ansible**: Automatisierung von Deployment und Konfiguration
+- **PostgreSQL**: Relationale Datenbank
+- **Express.js** (Node.js): Backend-Dienst für API
+- **Nginx**: HTTP-Server und Reverse Proxy
 
-## Technologien
+## **Projektfunktionen**
+1. **Automatisiertes Setup:**
+   Ansible konfiguriert und startet alle Services autonom.
+2. **Datenbank-Initialisierung:**
+   Das Playbook erstellt die Datenbankstruktur und fügt Testdaten ein.
+3. **Reverse Proxy:**
+   Nginx leitet `/api/`-Anfragen automatisch an das Backend weiter.
+4. **Modularität:**
+   Klare Trennung der Konfigurationen für Backend, Datenbank und Infrastruktur.
 
-- Docker & Docker Compose für containerisierte Dienste
-- Ansible für automatisiertes Deployment
-- PostgreSQL als relationale Datenbank
-- Node.js mit Express.js als Backend
-- Nginx als Reverse Proxy & Webserver
-
-## Funktionen
-
-- **Automatisiertes Setup:** Das Playbook installiert und konfiguriert alle Services.
-- **Datenbankinitialisierung:** Das Playbook erstellt automatisch die Datenbank und fügt Testdaten ein.
-- **Reverse Proxy mit Nginx:** `/api/`-Anfragen werden an das Backend weitergeleitet.
-- **Modularer Aufbau:** Klare Trennung zwischen Code, Infrastruktur und Automatisierung.
-
-## Ordner- und Projektstruktur
-
-```text
+## **Ordner-/Projektstruktur**
+Die gesamte Projektstruktur ist wie folgt organisiert:
+``` plaintext
 teko_nbs_ansible-docker-fullstack-example
-├── .idea/                   # IntelliJ IDEA-Projektdateien
-├── ansible/                 # Ansible Konfiguration und Rollen
+├── .idea/                   # IDE-spezifische Dateien (optional)
+├── ansible/                 # Ansible-Konfiguration und Rollen
 │   ├── roles/
-│   │   ├── backend/         # Backend-spezifische Rolle
-│   │   │   └── tasks/
-│   │   │       └── main.yaml
+│   │   ├── backend/         # Rolle für das Backend
 │   │   ├── common/          # Gemeinsame Konfigurationsrolle
-│   │   │   └── tasks/
-│   │   │       └── main.yaml
-│   │   ├── nginx/           # Nginx-spezifische Rolle
-│   │   │   └── tasks/
-│   │   │       └── main.yaml
-│   │   └── postgres/        # Postgres-spezifische Rolle
-│   │       └── tasks/
-│   │           └── main.yaml
-│   ├── templates/
-│   │   └── env.j2           # Jinja2-Umgebungstemplate
-│   ├── vault/
-│   │   └── secrets.yaml     # Verschlüsselte Secrets
-│   ├── ansible.log          # Log-Datei (optional)
-│   ├── inventory            # Server-Inventar
-│   └── playbook.yaml        # Ansible Playbook
-├── backend/                 # Node.js-Backend
-│   ├── node_modules/        # Abhängigkeiten automatisch von npm generiert
-│   ├── Dockerfile           # Docker-Builddatei für das Backend
-│   ├── package.json         # Paketdefinition und Abhängigkeiten
-│   ├── package-lock.json    # Automatisch generiertes Abhängigkeitsmanagement
-│   └── server.js            # Haupt-Server-Implementierung
-├── deployment/              # Deployment-Konfigurationsdateien
-│   ├── .env                 # Umgebungsvariablen
-│   └── docker-compose.yaml  # Konfiguration für den Docker-Stack
-├── nginx/                   # Nginx-Server Konfiguration
-│   ├── index.html           # Statische HTML-Seite
-│   └── nginx.conf           # Konfigurationsdatei für Nginx
-├── ansible.cfg              # Hauptkonfigurationsdatei für Ansible
+│   │   ├── nginx/           # Rolle für Nginx
+│   │   └── postgres/        # Rolle für PostgreSQL
+│   ├── templates/           # Jinja2-Templates
+│   ├── vault/               # Verschlüsselte Dateien (Secrets)
+│   ├── inventory            # Hosts-Inventar
+│   └── playbook.yaml        # Playbook für das Deployment
+├── backend/                 # Backend-Quellcode (Node.js)
+├── deployment/              # Deployment-Dateien (.env, docker-compose etc.)
+├── nginx/                   # Nginx-Konfiguration und statische Dateien
+├── ansible.cfg              # Ansible-Projektkonfiguration
 ├── LICENSE                  # Lizenzinformationen
-├── package-lock.json        # Projektweite Abhängigkeitsmanagementdatei
-└── README.md                # Projektbeschreibung und Dokumentation
-
+└── README.md                # Dokumentation
 ```
-
-## Genutzte Dependencies
-
-```bash
-ansible [core 2.14.18]
-  config file = None
-  ansible python module location = /usr/lib/python3/dist-packages/ansible
-  python version = 3.11.2
-  jinja version = 3.1.2
-  libyaml = True
-Docker version 27.5.1, build 9f9e405
-Python 3.11.2
-pip 23.0.1 from /usr/lib/python3/dist-packages/pip (python 3.11)
+## **Nützliche Befehle**
+### **1. Ansible-Host-Check**
+Teste die Verfügbarkeit der definierten Hosts:
+``` bash
+ansible all -i ansible/inventory -m ping -vvvv
 ```
-
-## Gelerntes
-
-### Inventory Erreichbarkeit testen
-
-Testen, ob Ansible den Host erreichen kann:
-
-```bash
-ansible all -i inventory -m ping
-```
-
 Erwartete Ausgabe:
-
-```
+``` json
 localhost | SUCCESS => {
     "changed": false,
     "ping": "pong"
 }
 ```
-
-### Verbesserte Sicherheit durch Ansible Vault
-
-Ansible Vault wird verwendet, um sensible Daten (Passwörter, API-Keys, private Variablen, Zertifikate) sicher zu speichern.
-
-Datei verschlüsseln:
-```bash
-ansible-vault encrypt vars.yml
+### **2. Ansible Vault nutzen**
+#### Verschlüsseln einer Datei
+``` bash
+ansible-vault encrypt secrets.yml
 ```
-
-Datei entschlüsseln:
-```bash
-ansible-vault decrypt vars.yml
+#### Entschlüsseln einer Datei
+``` bash
+ansible-vault decrypt secrets.yml
 ```
-
-Geheime Datei bearbeiten:
-```bash
-ansible-vault edit ansible/vault/secrets.yaml
+#### Datei bearbeiten
+``` bash
+ansible-vault edit ansible/vault/secrets.yml
 ```
-
-### User zu `sudo`-User machen
-
-Falls ein Benutzer `sudo`-Rechte benötigt, kann dieser permanent hinzugefügt werden:
-
-```bash
-sudo usermod -aG sudo meinbenutzer
-```
-
-Anschließend die Änderungen anwenden:
-```bash
-newgrp sudo
-```
-
-Testen, ob `sudo` jetzt funktioniert:
-```bash
-sudo whoami
-```
-
-Erwartete Ausgabe:
-```
-root
-```
-
-### Ansible-Projekt wurde vollständig auf Linux durchgeführt
-
-- Alle eingesetzten Tools (Ansible, Docker, PostgreSQL, Nginx) wurden auf einer Linux-Umgebung getestet.
-- Keine Windows- oder MacOS-Komponenten wurden berücksichtigt.
-- Alle verwendeten Befehle sind für Linux-Distributionen optimiert.
-- Dateisystemrechte wurden korrekt für Linux-Systeme konfiguriert.
-
-### Docker-Compose wird automatisch durch Ansible gestartet
-
-- Das Playbook führt `docker-compose up -d` nach der Installation und Konfiguration automatisch aus.
-- Alle Container laufen nach der Playbook-Ausführung automatisch.
-- Keine manuellen Startbefehle für `docker-compose` notwendig.
-
-## TODO (Nächste Schritte)
-
-### `.gitignore` aktualisieren, um sensible Dateien auszuschließen:
-
-```bash
-echo "ansible/vault/secrets.yml" >> .gitignore
-echo "ansible/vault-pass.txt" >> .gitignore
-```
-
-### Ansible Playbook ausführen:
-
-```bash
-ansible-playbook -i inventory.ini playbook.yml --ask-vault-pass
-```
-
-### Backend & Datenbank testen:
-
-```bash
+### **3. Backend und Datenbank testen**
+Sobald die Anwendung gestartet wurde, kann der API-Endpunkt getestet werden:
+``` bash
 curl -s http://localhost:8080/api/users
 ```
-
-### Syntax check
+## **Genutzte Software-Versionen**
+Folgende Versionen wurden getestet und verwendet:
+``` bash
+Ansible [core 2.14.18]
+Docker version 27.5.1, build 9f9e405
+Python 3.11.2
+pip 23.0.1
 ```
-ansible-playbook ansible/playbook.yaml --syntax-check
-```
+## **Fazit und Zielerreichung**
+- **Sicher & Automatisiert**: Mit Ansible Vault und Automatisierung aller Schritte ist die Lösung sicher und effizient.
+- **Modulierbar & Wartbar**: Klare Trennung der Rollen und Konfigurationen.
+- **Bereit für Produktion**: Problemloses Deployment in einer produktionsähnlichen Umgebung möglich.
 
-## Fazit
-
-- Modular, sicher & skalierbar
-- Automatisiertes Deployment
-- Sichere Handhabung von Passwörtern
-- Bereit für Produktion & CI/CD
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+Falls weitere Fragen oder Probleme auftreten, steht die Dokumentation als Nachschlagewerk bereit.
