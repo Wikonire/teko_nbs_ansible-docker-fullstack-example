@@ -10,17 +10,24 @@
         th, td { padding: 10px; border: 1px solid #ddd; text-align: left; }
         th { background-color: #f4f4f4; }
     </style>
+    <p id="loading" style="color: green;">Lade Userliste...</p>
     <script>
         async function fetchUsers() {
+            const loading = document.getElementById("loading");
             try {
                 const response = await fetch("/api/users");
-                if (!response.ok) throw new Error("Fehler beim Abrufen der Daten");
+                if (!response.ok) throw new Error("API-Fehler: " + response.status);
+
                 const users = await response.json();
+                if (!Array.isArray(users)) throw new Error("Ungültige API-Antwort!");
+
                 document.getElementById("users-table").innerHTML =
                     "<tr><th>ID</th><th>Name</th><th>Email</th></tr>" +
                     users.map(user => `<tr><td>${user.id}</td><td>${user.name}</td><td>${user.email}</td></tr>`).join("");
+
+                loading.style.display = "none";
             } catch (error) {
-                document.getElementById("error").textContent = "Daten konnten nicht geladen werden!";
+                loading.textContent = "Fehler: " + error.message;
             }
         }
         window.onload = fetchUsers;
