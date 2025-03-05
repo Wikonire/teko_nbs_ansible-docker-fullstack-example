@@ -15,21 +15,20 @@ Füge dort z. B. folgendes ein:
 
 ```yaml
 postgres_password: "testpass"
-backend_secret_key: "supergeheimes-token"
 ```
 
 Die Datei mit `STRG + X` speichern, dann `Y`, dann `Enter`.
 
 #### Bestehende Datei verschlüsseln
 
-Falls eine bestehende Datei verschlüsselt werden soll:
+Falls eine bestehende Datei verschlüsselt werden soll, wie das erstellte `ansible/vault/secrets.yml`:
 
 ```bash
-ansible-vault encrypt ansible/vault/secrets.yml
+  ansible-vault encrypt ansible/vault/secrets.yml
 ```
 ### Deployment starten
 ```bash
-ansible-playbook -i ansible/inventory.ini ansible/playbook.yaml --ask-vault-pass --ask-become-pass
+  ansible-playbook -i ansible/inventory.ini ansible/playbook.yaml --ask-vault-pass --ask-become-pass
 ```
 
 ## Prerequisites (Voraussetzungen)
