@@ -1,4 +1,4 @@
 [containers]
-backend_container ansible_connection=docker
-nginx_container ansible_connection=docker
-postgres_container ansible_connection=docker
+backend_container ansible_connection=docker ansible_user=root ansible_python_interpreter=/usr/bin/python3
+nginx_container ansible_connection=docker ansible_user=root ansible_python_interpreter=/usr/bin/python3
+postgres_container ansible_connection=docker ansible_user=root ansible_python_interpreter=/usr/bin/python3
