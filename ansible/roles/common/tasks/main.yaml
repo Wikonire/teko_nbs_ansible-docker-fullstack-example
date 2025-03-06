@@ -89,4 +89,31 @@
   when: reboot_required_file.stat.exists
   become: true
 
+- name: Überprüfe laufende Docker-Container
+  shell: docker ps
+  register: running_containers
+  when: isTest | default(false) | bool
+  become: true
 
+- name: Breche ab, falls keine Docker-Container laufen
+  debug:
+    msg: "Es gibt keine laufenden Docker-Container. Keine Bereinigung notwendig."
+  when: running_containers.stdout == ""
+  become: true
+
+- name: Zeige laufende Container
+  debug:
+    msg: "{{running_containers.stdout}}"
+  when: running_containers.stdout != ""
+  become: true
+
+- name: Führt Bereinigung aus, falls `isTest=true` gesetzt ist und Docker-Container laufen
+  shell: >
+    docker stop $(docker ps -aq) &&
+    docker rm $(docker ps -aq) &&
+    docker volume prune -f &&
+    docker network prune -f
+  when:
+    - isTest | default(false) | bool
+    - running_containers.stdout != ""
+  become: true
