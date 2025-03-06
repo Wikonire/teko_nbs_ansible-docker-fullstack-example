@@ -76,6 +76,7 @@
 - name: Debug Backend-Status (im Fehlerfall)
   debug:
     var: backend_status
+  when: backend_status is not defined or backend_status.status != 200
   failed_when: backend_status is not defined or backend_status.status != 200
 
 - name: Wait for Backend API
